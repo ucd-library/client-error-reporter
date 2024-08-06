@@ -4,6 +4,7 @@ import uaParser from 'ua-parser-js';
 import config from './config.js';
 import cors from 'cors';
 import ErrorCache from './cache.js';
+import logger from './logger.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -92,7 +93,7 @@ app.post('/', (req, res) => {
     }
     cache.add(payload);
 
-    console.error(payload);
+    logger.error(payload);
 
     res.status(200).send('OK');
 

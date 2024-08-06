@@ -12,7 +12,7 @@ REGISTRY="gcr.io/digital-ucdavis-edu/"
 if [[ $LOCAL_DEV == 'true' ]]; then
   REGISTRY="localhost/local-dev/"
 else
-  BUILD_CMD="$BUILD_CMD --pull --push"
+  BUILD_CMD="$BUILD_CMD --pull"
 fi
 
 BUILD_DATETIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -26,9 +26,11 @@ if [[ -z "$BRANCH_NAME" ]]; then
 fi
 if [[ -z "$TAG_NAME" ]]; then
   TAG_NAME=$(git describe --tags --abbrev=0 || true)
-  if [[ ! -z "$TAG_NAME" ]]; then
-    IMAGE_TAG=$TAG_NAME
-  fi
+fi
+
+IMAGE_TAG=$BRANCH_NAME
+if [[ ! -z "$TAG_NAME" ]]; then
+  IMAGE_TAG=$TAG_NAME
 fi
 
 echo "Building $REGISTRY$IMAGE_NAME:$IMAGE_TAG"
@@ -39,3 +41,8 @@ $BUILD_CMD \
   --build-arg BRANCH_NAME=$BRANCH_NAME \
   --build-arg BUILD_DATETIME=$BUILD_DATETIME \
   -t $REGISTRY$IMAGE_NAME:$IMAGE_TAG .
+
+if [[ $LOCAL_DEV != 'true' ]]; then
+  echo "Pushing $REGISTRY$IMAGE_NAME:$IMAGE_TAG"
+  docker push $REGISTRY$IMAGE_NAME:$IMAGE_TAG
+fi
