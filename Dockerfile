@@ -1,0 +1,21 @@
+FROM node:20
+
+RUN mkdir /service
+WORKDIR /service
+
+COPY package.json .
+COPY package-lock.json .
+RUN npm install
+
+COPY src src
+
+ARG SHORT_SHA
+ENV SHORT_SHA=$SHORT_SHA
+ARG TAG_NAME
+ENV TAG_NAME=$TAG_NAME
+ARG BRANCH_NAME
+ENV BRANCH_NAME=$BRANCH_NAME
+ARG BUILD_DATE
+ENV BUILD_DATE=$BUILD_DATE
+
+CMD ["node", "src/index.js"]
