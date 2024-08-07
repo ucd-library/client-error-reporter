@@ -37,13 +37,21 @@ app.post('/', (req, res) => {
       return;
     }
 
+    // check for a request body
+    if( !req.body ) {
+      res.status(400).send('Request body is required');
+      return;
+    }
+
+    let payload = req.body;
+
     // check that a referer header is present
     let referer = req.get('referer');
     if( !referer ) {
       res.status(400).send('Referer header is required');
       return;
     }
-    referer = new URL(referer).host;
+    payload.domain = new URL(referer).host;
 
     // check that the referer domain is allowed
     let allowed = config.allowedDomains.some(domain => domain.test(referer));
@@ -52,19 +60,13 @@ app.post('/', (req, res) => {
       return;
     }
 
-    // check for a request body
-    if( !req.body ) {
-      res.status(400).send('Request body is required');
-      return;
+    if( payload.name ) {
+      payload.loggerName = payload.name;
+      delete payload.name;
     }
 
-    let loggerName = req.body.name;
-    let error = req.body.error;
-    let pathname = req.body.pathname;
-    let search = req.body.search;
-
     // check that the request body has a name and error
-    if( !loggerName || !error || !pathname ) {
+    if( !payload.loggerName || !payload.error || !payload.pathname ) {
       res.status(400).send('Name, error and pathname are required in the request body');
       return;
     }
@@ -75,17 +77,10 @@ app.post('/', (req, res) => {
       res.status(400).send('User-Agent header is required');
       return;
     }
-    ua = uaParser(ua);
 
-    let payload = {
-      ip: req.get('x-forwarded-for') || req.ip,
-      error,
-      ua,
-      domain: referer,
-      pathname,
-      search,
-      loggerName
-    };
+    payload.ua = uaParser(ua);
+    payload.ip = req.get('x-forwarded-for') || req.ip;
+
 
     if( cache.has(payload) ) {
       res.status(200).send('Duplicate');
