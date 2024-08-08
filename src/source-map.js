@@ -23,34 +23,55 @@ class Cache {
 }
 const cache = new Cache();
 
-// Load the source map
-const sourceMapPath = path.resolve(__dirname, '../../services/client/dev/js/bundle.js.map');
-const sourceMap = JSON.parse(fs.readFileSync(sourceMapPath, 'utf8'));
 
-// Function to map the stack trace
-async function mapStackTrace(stack, url) {
-  let sourceMap;
-  
+async function loadSourceMap(url) {
   if( cache.has(url) ) {
-    sourceMap = cache.get(url);
-  } else {
-    try {
+    return cache.get(url);
+  } 
+
+  let sourceMap;
+  try {
     let resp = await fetch(url);
     sourceMap = await resp.text();
     cache.set(url, sourceMap);
-    } catch (e) {
-      console.error(`Failed to fetch source map from (${url}):`, e);
-      return stack;
-    }
+  } catch (e) {
+    console.error(`Failed to fetch source map from (${url}):`, e);
+    return null;
   }
 
-  const consumer = await new SourceMapConsumer(sourceMap);
+  return sourceMap;
+}
+
+// Function to map the stack trace
+async function mapStackTrace(stack, opts={}) {
+  if( !opts.urlMap ) opts.urlMap = {}; 
 
   const stackLines = stack.split('\n');
+
+  stackLines.forEach(line => {
+    const match = line.match(/at (.+) \((http(s)?:\/\/.*):(\d+):(\d+)\)/);
+
+    if( !match ) return;
+    const [_, functionName, url, l, column] = match;
+    opts.urlMap[url] = null;
+  });
+  
+  for( let url in opts.urlMap ) {
+    if( opts.ext ) url += opts.ext;
+
+    let sourceMap = await loadSourceMap(url);
+    if( !sourceMap ) continue;
+    opts.urlMap[url] = await new SourceMapConsumer(sourceMap);
+  }
+
   const mappedStack = stackLines.map(line => {
-    const match = line.match(/at (.+) \(.*\/(.*):(\d+):(\d+)\)/);
+    const match = line.match(/at (.+) \((http(s)?:\/\/.*):(\d+):(\d+)\)/);
     if (match) {
-      const [_, functionName, file, line, column] = match;
+      const [_, functionName, url, line, column] = match;
+
+      const consumer = opts.urlMap[url];
+      if( !consumer ) return line;
+
       const originalPosition = consumer.originalPositionFor({
         line: parseInt(line, 10),
         column: parseInt(column, 10),
@@ -67,4 +88,4 @@ async function mapStackTrace(stack, url) {
   return mappedStack.join('\n');
 }
 
-export default { mapStackTrace };
+export { mapStackTrace };

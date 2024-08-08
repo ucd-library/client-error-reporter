@@ -89,13 +89,22 @@ app.post('/', async (req, res) => {
     }
     cache.add(payload);
 
-    if( payload.sourceMapUrl && payload.error instanceof Object ) {
-      if( payload.error.stack ) {
-        payload.error.stack = await mapStackTrace(payload.error.stack, payload.sourceMapUrl);
+    // map the stack trace via source maps
+    if( (payload.sourceMapUrl || payload.sourceMapExtension) && 
+          payload.error instanceof Object &&
+          payload.error.stack ) {
+      let opts = {
+        ext: payload.sourceMapExtension, 
+        urlMap: {}
+      };
+      if( payload.sourceMapUrl ) {
+        opts.urlMap[payload.sourceMapUrl] = null;
       }
+
+      payload.error.stack = await mapStackTrace(payload.error.stack, opts);
     }
 
-    logger.error(payload);
+    logger.error(payload); 
 
     res.status(200).send('OK');
 

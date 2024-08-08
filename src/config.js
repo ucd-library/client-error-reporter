@@ -42,6 +42,8 @@ const config = {
 
   port: process.env.PORT || 3000,
 
+  output : process.env.OUTPUT || 'google-cloud',
+
   key,
 
   allowedDomains

@@ -1,0 +1,16 @@
+
+services:
+
+  reporter:
+    image: localhost/local-dev/client-error-reporter:main
+    ports:
+      - "3001:3001"
+    environment:
+      # - GOOGLE_APPLICATION_CREDENTIALS=/etc/google/service-account.json
+      - PORT=3001
+      - OUTPUT=stdout
+      - ALLOWED_DOMAINS=localhost:3000
+    volumes:
+      - ../../src:/service/src
+      # - ./service-account.json:/etc/google/service-account.json
+    command: ["bash", "-c", "tail -f /dev/null"]
