@@ -25,6 +25,9 @@ const cache = new Cache();
 
 
 async function loadSourceMap(url) {
+  let hostname = new URL(url).hostname;
+  if( hostname === 'localhost' ) return null;
+
   if( cache.has(url) ) {
     return cache.get(url);
   } 
@@ -84,7 +87,11 @@ async function mapStackTrace(stack, opts={}) {
     return line;
   });
 
-  consumer.destroy();
+  for( let url in opts.urlMap ) {
+    if( !opts.urlMap[url] ) continue;
+    opts.urlMap[url].destroy();
+  }
+  
   return mappedStack.join('\n');
 }
 

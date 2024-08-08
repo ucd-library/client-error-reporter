@@ -114,7 +114,10 @@ app.post('/', async (req, res) => {
 });
 
 function sendError(res, error) {
-  res.status(500).json(error);
+  res.status(500).json({
+    message : error.message,
+    stack : error.stack
+  });
 }
 
 app.listen(port, () => {
