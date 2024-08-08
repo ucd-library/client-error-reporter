@@ -5,6 +5,7 @@ import config from './config.js';
 import cors from 'cors';
 import ErrorCache from './cache.js';
 import logger from './logger.js';
+import { mapStackTrace } from './source-map.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -28,7 +29,7 @@ app.get('/', (req, res) => {
   }
 });
 
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
   try {
     // check for key match
     let key = req.get('x-api-key') || req.query.key || '';
@@ -87,6 +88,12 @@ app.post('/', (req, res) => {
       return;
     }
     cache.add(payload);
+
+    if( payload.sourceMapUrl && payload.error instanceof Object ) {
+      if( payload.error.stack ) {
+        payload.error.stack = await mapStackTrace(payload.error.stack, payload.sourceMapUrl);
+      }
+    }
 
     logger.error(payload);
 
