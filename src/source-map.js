@@ -70,13 +70,13 @@ async function mapStackTrace(stack, opts={}) {
   const mappedStack = stackLines.map(line => {
     const match = line.match(/at (.+) \((http(s)?:\/\/.*):(\d+):(\d+)\)/);
     if (match) {
-      const [_, functionName, url, line, column] = match;
+      const [_, functionName, url, mline, column] = match;
 
       const consumer = opts.urlMap[url];
       if( !consumer ) return line;
 
       const originalPosition = consumer.originalPositionFor({
-        line: parseInt(line, 10),
+        line: parseInt(mline, 10),
         column: parseInt(column, 10),
       });
 
